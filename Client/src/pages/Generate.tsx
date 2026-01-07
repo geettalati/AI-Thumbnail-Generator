@@ -1,7 +1,9 @@
 import { useState } from "react"
 import { useParams } from "react-router-dom"
-import type { IThumbnail } from "../assets/assets"
+import { colorSchemes, type AspectRatio, type IThumbnail, type ThumbnailStyle } from "../assets/assets"
 import Softbackdrop from "../components/Softbackdrop"
+import Aspectratioselector from "../components/Aspectratioselector"
+import StyleSelector from "../components/StyleSelector"
 
 
 const Generate = () => {
@@ -12,7 +14,10 @@ const Generate = () => {
 
     const [thumbnail ,setThumbnail] = useState<IThumbnail | null>(null)
     const [loading ,setloading] =useState(false)
-  
+    const [aspectRatio ,setAspectRatio] = useState<AspectRatio>('16:9')
+    const [colorschemeId ,setcolorschemeId] = useState<string>(colorSchemes[0].id)
+    const [style,setstyle] = useState<ThumbnailStyle>('Bold and Graphic')
+    const [styleDropdown , setstyleDropdown] = useState(false)     
 
   return (
     <div>
@@ -33,14 +38,32 @@ const Generate = () => {
                     <div className="space-y-2">
                       <label className="block text-sm font-medium ">Title or Topic</label>
                       <input type="text" value={title}  onChange={(e) =>setTitle(e.target.value)} maxLength={100 } placeholder="e.g . , 10 Tips for Better Sleep" className="w-full px-4 py-3 rounded-lg border border-white/12 bg-black/20 text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-pink-500"/>
+                      <div className="flex justify-end">
+                        <span className="text-xs text-zinc-400">{title.length}/100</span>
+                      </div>
                     </div>
+                    {/*Aspect Ratio Selector */}
+                    <Aspectratioselector value={aspectRatio} onChange={setAspectRatio}/>
+                    {/*Theme selector */}
+                    <StyleSelector value={style} onChange={setstyle} isOpen={styleDropdown} setIsOpen={setstyleDropdown} />
+                    {/*Color Scheme Selector */}  
+                    {/*Details */}
+
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium">
+                        Additional Prompts <span className="text-zinc-400 text-zs">(optional)</span>
+                      </label>
+                      <textarea value={additionaldetails} onChange={(e)=>setadditionaldetails(e.target.value)}  rows={3} placeholder="Add any specific elements,mood, or style preferences..." className="w-full px-4 py-3 rounded-lg border border-white/10 bg-white/6 text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none overflow-hidden"></textarea>
+                    </div>
+                    
+
 
                   </div>
 
                   {/* BUTTON */ }
 
                   {!id && (
-                    <button className="text-[15px] w-full py-3.5 rounded-xl font-mdeium bg-linear-to-b from-pink-500 to-pink-600 hover:from-pink-700 disabled:cursor-not-allowed transition-colors">
+                    <button className="text-[15px] w-full py-3.5 rounded-xl font-medium bg-linear-to-b from-pink-500 to-pink-600 hover:from-pink-700 disabled:cursor-not-allowed transition-colors">
                       {loading ? 'Generating ... ' : '  Generate Thumbnail '}
                     </button>
                   )}
