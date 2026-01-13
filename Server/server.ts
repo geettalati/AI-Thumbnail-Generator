@@ -40,6 +40,7 @@ import session from 'express-session';
 // 14) What happens if server restarts and sessions are in memory?
 import MongoStore from 'connect-mongo';
 
+import authrouter from './routes/auth.routes.js';
 
 // =======================
 // TYPESCRIPT SESSION EXTENSION
@@ -181,22 +182,24 @@ app.get('/', (req: Request, res: Response) => {
   res.send('Server is Live!');
 });
 
+app.use('/api/auth', authrouter);
+
 
 // =======================
 // SERVER STARTUP
 // =======================
 
-const startServer = async () => {
+async function startServer() {
   // Connect to DB before server starts
   // Interview Q:
-// 38) What happens if DB connects after app.listen?
-// 39) How would you handle DB connection failure gracefully?
+  // 38) What happens if DB connects after app.listen?
+  // 39) How would you handle DB connection failure gracefully?
   await connectDB();
 
   app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
   });
-};
+}
 
 // Start the application
 startServer();

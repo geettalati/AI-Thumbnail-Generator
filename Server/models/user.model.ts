@@ -21,6 +21,11 @@ const userschema = new mongoose.Schema<IUser>({
         unique:true,
         lowercase:true,
     },
+    password:{
+        type:String,
+        required:true,
+        trim:true,
+    }
 
 },{timestamps:true})
 

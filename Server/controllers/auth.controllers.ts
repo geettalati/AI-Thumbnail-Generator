@@ -4,13 +4,14 @@
 // 1) Why do we import Request & Response explicitly?
 // 2) What happens if we don’t type req and res in TS?
 import { Request, Response } from 'express';
-
+import 'express-session';
 // Import User Mongoose model
 // This model represents the users collection in MongoDB
 // Interview (Theory):
 // 3) What is a Mongoose model?
 // 4) Difference between Schema and Model?
 import User from '../models/user.model.js';
+import session from 'express-session';
 
 // bcryptjs is used for hashing passwords
 // Never store plain-text passwords
@@ -156,18 +157,18 @@ export const register = async (req: Request, res: Response) => {
 // Interview (Theory):
 // 1) Why should controllers be typed in TypeScript?
 // 2) What benefits do typed req/res provide?
-import { Request, Response } from 'express';
+
 
 // Import User mongoose model
 // Interview (Theory):
 // 3) How does Mongoose map MongoDB documents to JS objects?
-import User from '../models/user.model.js';
+
 
 // bcrypt is used to compare hashed passwords
 // Interview (Theory):
 // 4) Why do we never compare passwords directly?
 // 5) How does bcrypt.compare work internally?
-import bcrypt from 'bcryptjs';
+
 
 
 // =======================
@@ -301,6 +302,8 @@ export const logoutuser = async (req: Request, res: Response) => {
         return res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+export default { loginuser, logoutuser , register };
 
 
 // =======================
