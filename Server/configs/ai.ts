@@ -1,7 +1,11 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY  as string || "",
-})  
+if (!process.env.GEMINI_API_KEY) {
+  throw new Error("GEMINI_API_KEY is missing in environment variables");
+}
 
-export default ai
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+export const ai = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash",
+});

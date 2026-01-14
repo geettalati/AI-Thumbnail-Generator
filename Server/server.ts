@@ -14,6 +14,7 @@ import express, { Request, Response } from 'express';
 // 4) What is CORS?
 // 5) What happens if CORS is not configured properly?
 // 6) Difference between simple request & preflight request?
+
 import cors from 'cors';
 
 // Loads environment variables from .env into process.env
@@ -39,8 +40,9 @@ import session from 'express-session';
 // 13) Why is MemoryStore unsafe in production?
 // 14) What happens if server restarts and sessions are in memory?
 import MongoStore from 'connect-mongo';
-
 import authrouter from './routes/auth.routes.js';
+import thumbnailrouter from './routes/thumbnail.routes.js';
+import userrouter from './routes/user.routes.js';
 
 // =======================
 // TYPESCRIPT SESSION EXTENSION
@@ -183,8 +185,8 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 app.use('/api/auth', authrouter);
-
-
+app.use('/api/thumbnail', thumbnailrouter);
+app.use('/api/user' , userrouter);
 // =======================
 // SERVER STARTUP
 // =======================

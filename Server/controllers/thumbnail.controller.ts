@@ -5,6 +5,10 @@ import { config } from 'dotenv';
 import path from 'node:path';
 import fs from 'node:fs';
 import {v2 as cloudinary} from 'cloudinary';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+
+
 
 
 const styleprompts = {
@@ -125,10 +129,23 @@ export const generatethumbnail = async (req: Request, res: Response) => {
         res.json({message:'Thumbnail generated successfully', thumbnail});
 
         fs.unlinkSync(filepath);
-    } catch (error) {
+    } catch (error : any) {
 
         console.log(error)
         res.status(500).json({message:'Server Error! Thumbnail generation failed.'});
         
+    }
+}
+
+export const deletethumbnail = async (req: Request, res: Response) => {
+    try {
+        const {id} = req.params;
+        const {userId} = req.session as any;
+
+        await Thumbnail.findByIdAndDelete({_id:id, userId});  
+        
+    } catch (error : any) {
+           console.log(error)
+        res.status(500).json({message:'Server Error! Thumbnail generation failed.'});
     }
 }
