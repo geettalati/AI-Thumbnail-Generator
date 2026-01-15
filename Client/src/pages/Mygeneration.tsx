@@ -18,10 +18,13 @@ import { div } from "motion/react-m"
 // React Router utilities
 // useNavigate → programmatic navigation
 // Link → declarative navigation
-import { Link, useNavigate } from "react-router-dom"
+import { Link, replace, useNavigate } from "react-router-dom"
 
 // Icons for UI actions
 import { ArrowUpRightIcon, DownloadIcon, TrashIcon } from "lucide-react"
+import { useAuth } from "../context/Authcontext"
+import api from "../configs/api"
+import toast from "react-hot-toast"
 
 /*
 INTERVIEW QUESTIONS (CORE):
@@ -33,6 +36,8 @@ INTERVIEW QUESTIONS (CORE):
 // -------------------- MAIN COMPONENT --------------------
 const Mygeneration = () => {
 
+  const {isLoggedIn} = useAuth();
+
   // -------------------- ASPECT RATIO MAP --------------------
   // Maps backend aspect ratio values → Tailwind CSS classes
   // This allows dynamic aspect-ratio rendering
@@ -41,6 +46,8 @@ const Mygeneration = () => {
     '1:1': 'aspect-square',
     '9:16': 'aspect-[9/16]'
   }
+
+
 
   /*
   INTERVIEW QUESTIONS:
@@ -67,12 +74,16 @@ const Mygeneration = () => {
   // -------------------- FETCH FUNCTION --------------------
   // Simulates backend fetch (later replaced with API)
   const fetchThumbnail = async () => {
-    setloading(true)
-
-    // TEMP: Using mock data
-    setThumbnails(dummyThumbnails as unknown as IThumbnail[])
-
-    setloading(false)
+    try {
+      setloading(true)
+      const {data} = await api.get('/api/user/thumbnails');
+      setThumbnails(data.thumbnails  || []);
+    } catch (error : any) {
+      toast.error(error.response?.data?.message || "Failed to fetch thumbnails");
+    }
+    finally {
+      setloading(false)
+    }
   }
 
   /*
@@ -94,7 +105,11 @@ const Mygeneration = () => {
   // -------------------- DOWNLOAD HANDLER --------------------
   // Opens image URL in a new tab
   const handledownload = (image_url: string) => {
-    window.open(image_url, '_blank')
+     const link = document.createElement('a');
+    link.href = image_url?.replace('/upload','/upload/fl_attachment/');
+    document.body.appendChild(link); 
+    link.click();
+    link.remove();
   }
 
   /*
@@ -107,7 +122,16 @@ const Mygeneration = () => {
   // -------------------- DELETE HANDLER --------------------
   // Currently logs ID (future backend integration)
   const handledelete = async (id: string) => {
-    console.log(id)
+    try {
+        const confirm = window.confirm("Are you sure you want to delete this thumbnail?");
+        if(!confirm) return; 
+        const {data} = await api.delete(`/api/thumbnails/delete/${id}`);
+        toast.success(data.message);
+        setThumbnails(thumbnails.filter((t)=> t._id !== id));
+    } catch (error:any) {
+      console.log("Delete failed", error);
+      toast.error(error.response?.data?.message || "Failed to fetch thumbnails");
+    }
   }
 
   /*
@@ -120,7 +144,9 @@ const Mygeneration = () => {
   // -------------------- SIDE EFFECT --------------------
   // Runs once on component mount
   useEffect(() => {
+    if(isLoggedIn){
     fetchThumbnail()
+    }
   }, [])
 
   /*

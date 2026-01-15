@@ -18,6 +18,15 @@ const Previewpanel = ({
     '9:16': 'aspect-[9/16]',
   } as Record<AspectRatio, string>;
 
+  const ondownload = () => {
+    if(!thumbnail?.image_url) return;
+    const link = document.createElement('a');
+    link.href = thumbnail?.image_url.replace('/upload','/upload/fl_attachment/');
+    document.body.appendChild(link); 
+    link.click();
+    link.remove();
+  }
+
   return (
     // OUTER FRAME (this creates the "card within card" effect)
     <div className="mx-auto w-full max-w-[560px] rounded-xl bg-black/20 p-4">

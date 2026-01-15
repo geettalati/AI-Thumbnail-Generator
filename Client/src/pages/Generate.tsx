@@ -17,7 +17,7 @@ INTERVIEW (CODING):
 
 // useParams → reads dynamic parameters from the URL
 // Example route: /generate/:id → id is accessed here
-import { useParams } from "react-router-dom"
+import { useLocation, useNavigate, useParams } from "react-router-dom"
 
 /*
 INTERVIEW (THEORY):
@@ -38,7 +38,6 @@ INTERVIEW (CODING):
 // ThumbnailStyle → union type for dropdown values
 import {
   colorSchemes,
-  dummyThumbnails,
   type AspectRatio,
   type IThumbnail,
   type ThumbnailStyle
@@ -74,6 +73,9 @@ import Previewpanel from "../components/Previewpanel"
 
 // ❌ UNUSED IMPORT → would be removed in production
 import { setStyle } from "motion"
+import { useAuth } from "../context/Authcontext"
+import toast from "react-hot-toast"
+import api from "../configs/api"
 
 /*
 INTERVIEW (THEORY):
@@ -113,6 +115,13 @@ const Generate = () => {
 
   // Stores additional prompt text
   const [additionaldetails, setadditionaldetails] = useState('')
+
+  const {pathname} = useLocation()
+
+  const navigate = useNavigate()
+
+
+  const {isLoggedIn} = useAuth();
 
   /*
   INTERVIEW (THEORY):
@@ -173,23 +182,31 @@ const Generate = () => {
   // In production → calls backend AI API
   const handleGenerate = async () => {
   try {
+      
+    if(!isLoggedIn) return toast.error("Please login to generate thumbnail");
+    if(!title.trim()) return toast.error("Please enter a title");
     setloading(true);
+    const apipayload = {
+      title,
+      prompt  : additionaldetails,
+      style,
+      aspect_ratio:aspectRatio,
+      color_scheme: colorschemeId,
+      text_overlay: true
+    }
 
-    // 🔹 simulate thumbnail generation (replace with API later)
-    const generatedThumbnail = dummyThumbnails[0]; // or API response
+    const {data} = await api.post('/api/thumbnails/generate', apipayload);
 
-    // 🔹 update preview
-    setThumbnail(generatedThumbnail);
-
-    // 🔹 IMPORTANT: open image in new tab
-    window.open(generatedThumbnail.image_url, "_blank");
-
+    if(data.thumbnail){
+      navigate(`/generate/${data.thumbnail._id}`);
+      toast.success("Thumbnail generated successfully");
+    }   
   } catch (error) {
     console.error("Failed to generate thumbnail", error);
   } finally {
     setloading(false);
   }
-};
+}; 
 
 
 
@@ -222,32 +239,20 @@ const Generate = () => {
   */
 
   const fetchThumbnail = async () => {
-
-    // Only fetch if route contains an ID
-    if (id) {
-
-      // Find thumbnail from mock data (simulating backend response)
-      const thumbnail: any = dummyThumbnails.find(
-        (thumbnail) => thumbnail._id === id
-      )
-
-      /*
-      WHY THIS STEP EXISTS:
-      - Converts backend data into React state
-      - Synchronizes UI with stored data
-      */
-
-      // Populate ALL UI states from fetched data
-      setThumbnail(thumbnail)                    // Preview panel
-      setadditionaldetails(thumbnail.user_prompt) // Textarea
-      setTitle(thumbnail.title)                  // Title input
-      setcolorschemeId(thumbnail.color_scheme)   // Color palette
-      setAspectRatio(thumbnail.aspect_ratio)     // Aspect ratio
-      setstyle(thumbnail.style)                  // Style dropdown
-
-      // Stop loading once data is ready
-      setloading(false)
-    }
+      try {
+          const {data} = await api.get(`/api/thumbnails/${id}`);
+          setThumbnail(data?.thumbnail as IThumbnail);
+          setloading(!data?.thumbnail.image_url);
+          setadditionaldetails(data?.thumbnail?.additional_prompt || ''); 
+          setTitle(data?.thumbnail?.title || '');
+          setcolorschemeId(data?.thumbnail?.color_scheme || colorSchemes[0].id);
+          setAspectRatio(data?.thumbnail?.aspect_ratio || '16:9');
+          setstyle(data?.thumbnail?.style || 'Bold and Graphic');
+          
+      } catch (error : any) {
+        toast.error(error?.response?.data?.message || "Failed to fetch thumbnail");
+        
+      }
   }
 
   /*
@@ -267,12 +272,21 @@ const Generate = () => {
 
     // Runs when component renders
     // If editing mode → fetch thumbnail data
-    if (id) {
-      fetchThumbnail()
+    if(isLoggedIn && id){
+      fetchThumbnail()  
     }
+    if(id && loading && isLoggedIn){
+      const interval = setInterval(() => {fetchThumbnail() },5000);
+      return () => clearInterval(interval);
 
+    }
+  },[id , loading , isLoggedIn ])
+  
+  useEffect(() =>{
+    if(!id && thumbnail){
+      setThumbnail(null);
+    }
   })
-
   /*
   🔥 VERY IMPORTANT INTERVIEW QUESTIONS 🔥
 
