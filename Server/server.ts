@@ -185,7 +185,7 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 app.use('/api/auth', authrouter);
-app.use('/api/thumbnail', thumbnailrouter);
+app.use('/api/thumbnails', thumbnailrouter);
 app.use('/api/user' , userrouter);
 // =======================
 // SERVER STARTUP

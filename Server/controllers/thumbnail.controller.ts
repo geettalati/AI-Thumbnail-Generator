@@ -1,26 +1,21 @@
 import { Request, Response } from 'express';
 import Thumbnail from '../models/thumbnail.model.js';
-import { GenerateContentConfig, HarmBlockThreshold, HarmCategory } from '@google/genai';
-import { config } from 'dotenv';
+import { Type } from '@google/genai';
 import path from 'node:path';
 import fs from 'node:fs';
-import {v2 as cloudinary} from 'cloudinary';
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { v2 as cloudinary } from 'cloudinary';
+import ai from '../configs/ai.js';
 
+const styleprompts: Record<string, string> = {
+    'Bold and Graphic': 'a bold and graphic style thumbnail, vibrant colors, strong contrasts, eye-catching design, modern typography, dynamic layout, high visual impact, simple yet striking',
+    'Tech/Futuristic': 'a tech and futuristic style thumbnail, sleek design, metallic colors, digital elements, modern typography, high-tech vibe, innovative layout, cutting-edge aesthetics',
+    'Minimalist': 'a minimalist style thumbnail, clean design, simple color palette, ample white space, modern typography, elegant layout, understated aesthetics, focus on essentials',
+    'Photorealistic': 'a photorealistic style thumbnail, high-detail imagery, lifelike colors, realistic lighting and shadows, modern typography, immersive design, visually rich aesthetics',
+    'Illustrated': 'an illustrated style thumbnail, hand-drawn elements, vibrant colors, playful design, creative typography, whimsical layout, artistic aesthetics, unique visual appeal',
+};
 
-
-
-
-const styleprompts = {
-    'Bold and Graphic':'a bold and graphic style thumbnail, vibrant colors, strong contrasts, eye-catching design  , modern typography, dynamic layout , high visual impact , simple yet striking',
-    'Tech/Futuristic':'a tech and futuristic style thumbnail, sleek design, metallic colors, digital elements, modern typography, high-tech vibe, innovative layout, cutting-edge aesthetics',
-    'Minimalist':'a minimalist style thumbnail, clean design, simple color palette, ample white space, modern typography, elegant layout, understated aesthetics, focus on essentials',
-    'Photorealistic':'a photorealistic style thumbnail, high-detail imagery, lifelike colors, realistic lighting and shadows, modern typography, immersive design, visually rich aesthetics',
-    'Illustrated':'an illustrated style thumbnail, hand-drawn elements, vibrant colors, playful design, creative typography, whimsical layout, artistic aesthetics, unique visual appeal',
-}
-
-const colorschemedescriptions = {
-    vibrant: 'bright and lively colors that grab attention and convey energy and excitement  ',
+const colorschemedescriptions: Record<string, string> = {
+    vibrant: 'bright and lively colors that grab attention and convey energy and excitement',
     sunset: 'warm and soothing colors inspired by a sunset, evoking feelings of calmness and tranquility',
     forest: 'earthy and natural colors inspired by a forest, conveying a sense of growth, stability, and harmony with nature',
     neon: 'bold and striking neon colors that create a futuristic and energetic vibe, perfect for grabbing attention',
@@ -28,124 +23,131 @@ const colorschemedescriptions = {
     monochrome: 'a sleek and modern monochrome color scheme using varying shades of a single color to create depth and interest',
     ocean: 'cool and refreshing ocean-inspired colors that evoke a sense of calmness, serenity, and vastness',
     pastel: 'soft and gentle pastel colors that create a light, airy, and approachable aesthetic',
-}
+};
 
 
-export const generatethumbnail = async (req: Request, res: Response) => { 
+export const generatethumbnail = async (req: Request, res: Response) => {
     try {
-        const{userId} = req.session as any;
-        const{title , prompt:user_prompt, style, aspect_ratio, color_scheme, text_overlay} = req.body;
+        const { userId } = req.session as any;
+        const { title, prompt: user_prompt, style, aspect_ratio, color_scheme, text_overlay } = req.body;
 
         const thumbnail = await Thumbnail.create({
             userId,
             title,
-            prompt_used:user_prompt,
+            prompt_used: user_prompt,
             user_prompt,
             style,
             aspect_ratio,
             color_scheme,
             text_overlay,
-            isGenerating:true,  
-        })
+            isGenerating: true,
+        });
 
-        const model = 'gemini-3-pro-image-preview';
+        // Build the prompt using backtick template literals so variables actually interpolate
+        let prompt = `Create a ${styleprompts[style] || 'visually striking'} thumbnail for: "${title}"`;
 
-        const generaionconfig: GenerateContentConfig = {
-            maxOutputTokens:32768,
-            temperature:1,
-            topP:0.95,
-            responseModalities:['image'],
-            imageConfig:{
-                aspectRatio: aspect_ratio,
-                imageSize:'1K',
+        if (color_scheme && colorschemedescriptions[color_scheme]) {
+            prompt += ` using a ${colorschemedescriptions[color_scheme]}`;
+        }
+
+        if (user_prompt) {
+            prompt += `. Also incorporate these details: "${user_prompt}"`;
+        }
+
+        prompt += `. The thumbnail should be of ${aspect_ratio} aspect ratio and should prominently feature the title text. Make it visually appealing and relevant to the content. Impossible to ignore.`;
+
+        console.log('Generating thumbnail with prompt:', prompt);
+
+        // Generate image using the @google/genai SDK
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.0-flash-preview-image-generation',
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            config: {
+                responseModalities: ['TEXT', 'IMAGE'],
             },
-            safetySettings:[
-                {
-                    category:HarmCategory.HARM_CATEGORY_HATE_SPEECH,threshold:HarmBlockThreshold.OFF
-                },
-                {
-                         category:HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,threshold:HarmBlockThreshold.OFF
-                },
-                {
-                        category:HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,threshold:HarmBlockThreshold.OFF
-                },
-                {
-                        category:HarmCategory.HARM_CATEGORY_HARASSMENT,threshold:HarmBlockThreshold.OFF
-                },
-                
-            ]
-        }
-        let prompt = 'Create a ${styleprompts[style as keyof styleprompts]} for: "{title}" '
+        });
 
-        if(color_scheme){
-            prompt += ' using a ${colorschemedescriptions[color_scheme as keyof colorschemedescriptions]}'
-        }
-
-        if(user_prompt){
-            prompt += '. Also incorporate these details: "{user_prompt}"' 
-        }
-        
-        prompt += 'The thumbnail should be of ${aspect_ratio} and should prominently feature the title text.Make it visually appealing and relevant to the content.Impossible to ignore.'
-
-        // generate image using Gemini API
-        const response = await ai.generateContent({
-            model:model,
-            prompt:[prompt],
-            config:generaionconfig,
-        })
-
-        // check if image is generated
-        
-        if(!response?.candidates?.[0].content?.parts){
-            throw new Error('Image generation failed');
+        // Check if image was generated
+        if (!response?.candidates?.[0]?.content?.parts) {
+            throw new Error('Image generation failed — no parts in response');
         }
 
         const parts = response.candidates[0].content.parts;
 
-        let finalbuffer : Buffer | null = null;
+        let finalbuffer: Buffer | null = null;
 
-        for(const part of parts){
-            if(part.inlinedata){
-                finalbuffer = Buffer.from(part.inlinedata);
+        for (const part of parts) {
+            // The @google/genai SDK uses part.inlineData with a .data base64 string
+            if (part.inlineData && part.inlineData.data) {
+                finalbuffer = Buffer.from(part.inlineData.data, 'base64');
             }
         }
 
-        const filename = 'final-output-${Date.now()}.png';
-        const filepath = path.join('images' , filename);
+        if (!finalbuffer) {
+            throw new Error('Image generation failed — no image data in response');
+        }
 
-        //check the images directory exists 
+        const filename = `final-output-${Date.now()}.png`;
+        const filepath = path.join('images', filename);
 
-        fs.mkdirSync('images' , {recursive:true});
+        // Ensure the images directory exists
+        fs.mkdirSync('images', { recursive: true });
 
-        // write the final image to the file 
+        // Write the final image to the file
+        fs.writeFileSync(filepath, finalbuffer);
 
-        fs.writeFileSync (filepath , finalbuffer as Buffer);
-
-        const uploadresult = await cloudinary.uploader.upload(filepath , {resource_type:'image',})
+        const uploadresult = await cloudinary.uploader.upload(filepath, { resource_type: 'image' });
 
         thumbnail.image_url = uploadresult.secure_url;
         thumbnail.isGenerating = false;
         await thumbnail.save();
-        res.json({message:'Thumbnail generated successfully', thumbnail});
+        res.json({ message: 'Thumbnail generated successfully', thumbnail });
 
+        // Clean up local file
         fs.unlinkSync(filepath);
-    } catch (error : any) {
-
-        console.log(error)
-        res.status(500).json({message:'Server Error! Thumbnail generation failed.'});
-        
+    } catch (error: any) {
+        console.log('Thumbnail generation error:', error);
+        res.status(500).json({ message: 'Server Error! Thumbnail generation failed.' });
     }
-}
+};
 
 export const deletethumbnail = async (req: Request, res: Response) => {
     try {
-        const {id} = req.params;
-        const {userId} = req.session as any;
+        const { id } = req.params;
+        const { userId } = req.session as any;
 
-        await Thumbnail.findByIdAndDelete({_id:id, userId});  
-        
-    } catch (error : any) {
-           console.log(error)
-        res.status(500).json({message:'Server Error! Thumbnail generation failed.'});
+        await Thumbnail.findByIdAndDelete({ _id: id, userId });
+        res.json({ message: 'Thumbnail deleted successfully' });
+    } catch (error: any) {
+        console.log(error);
+        res.status(500).json({ message: 'Server Error! Thumbnail deletion failed.' });
     }
-}
+};
+
+export const getThumbnailById = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const thumbnail = await Thumbnail.findById(id);
+
+        if (!thumbnail) {
+            return res.status(404).json({ message: 'Thumbnail not found' });
+        }
+
+        res.json({ thumbnail });
+    } catch (error: any) {
+        console.log(error);
+        res.status(500).json({ message: 'Server Error! Failed to fetch thumbnail.' });
+    }
+};
+
+export const getUserThumbnails = async (req: Request, res: Response) => {
+    try {
+        const { userId } = req.session as any;
+        const thumbnails = await Thumbnail.find({ userId }).sort({ createdAt: -1 });
+
+        res.json({ thumbnails });
+    } catch (error: any) {
+        console.log(error);
+        res.status(500).json({ message: 'Server Error! Failed to fetch thumbnails.' });
+    }
+};

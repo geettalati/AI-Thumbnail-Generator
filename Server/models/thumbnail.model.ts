@@ -5,7 +5,7 @@ export interface IThumbnail extends Document {
   title: string;
   description?: string;
   style:
-    | "Bold & Graphic"
+    | "Bold and Graphic"
     | "Tech/Futuristic"
     | "Minimalist"
     | "Photorealistic"
@@ -52,7 +52,7 @@ const thumbnailSchema = new Schema<IThumbnail>(
       type: String,
       required: true,
       enum: [
-        "Bold & Graphic",
+        "Bold and Graphic",
         "Tech/Futuristic",
         "Minimalist",
         "Photorealistic",

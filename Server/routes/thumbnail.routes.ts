@@ -1,10 +1,18 @@
-import  express  from "express";
-import { deletethumbnail, generatethumbnail } from "../controllers/thumbnail.controller.js";
+import express from "express";
+import { deletethumbnail, generatethumbnail, getThumbnailById, getUserThumbnails } from "../controllers/thumbnail.controller.js";
 
 const thumbnailrouter = express.Router();
 
-thumbnailrouter.post('/generate-thumbnail', generatethumbnail);
-thumbnailrouter.delete('/delete-thumbnail/:id', deletethumbnail);
+// POST /api/thumbnails/generate  — client calls this
+thumbnailrouter.post('/generate', generatethumbnail);
 
-export default thumbnailrouter
+// GET /api/thumbnails/:id  — client fetches thumbnail by ID
+thumbnailrouter.get('/:id', getThumbnailById);
 
+// GET /api/thumbnails  — client fetches all user thumbnails
+thumbnailrouter.get('/', getUserThumbnails);
+
+// DELETE /api/thumbnails/:id
+thumbnailrouter.delete('/:id', deletethumbnail);
+
+export default thumbnailrouter;

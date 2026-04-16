@@ -1,7 +1,7 @@
 import { MenuIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { motion } from "motion/react";
-;
+
 import {  useNavigate } from "react-router-dom";
 import { Link ,} from "react-router-dom";
 import { useAuth } from "../context/Authcontext";
