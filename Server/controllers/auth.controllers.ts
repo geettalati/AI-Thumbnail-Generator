@@ -303,7 +303,38 @@ export const logoutuser = async (req: Request, res: Response) => {
     }
 };
 
-export default { loginuser, logoutuser , register };
+// =======================
+// VERIFY SESSION CONTROLLER
+// =======================
+
+// Checks if the user has an active session and returns user data
+export const verifyuser = async (req: Request, res: Response) => {
+    try {
+        const { isLoggedIn, userId } = req.session;
+
+        if (!isLoggedIn || !userId) {
+            return res.status(401).json({ message: 'Not authenticated' });
+        }
+
+        const user = await User.findById(userId).select('-password');
+        if (!user) {
+            return res.status(401).json({ message: 'User not found' });
+        }
+
+        return res.json({
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email
+            }
+        });
+    } catch (error) {
+        console.error('Error during verification:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+export default { loginuser, logoutuser, register, verifyuser };
 
 
 // =======================
