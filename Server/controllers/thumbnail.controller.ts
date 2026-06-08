@@ -1,10 +1,8 @@
 import { Request, Response } from 'express';
 import Thumbnail from '../models/thumbnail.model.js';
-import { Type } from '@google/genai';
 import path from 'node:path';
 import fs from 'node:fs';
 import cloudinary from '../configs/cloudinary.js';
-import ai from '../configs/ai.js';
 
 const styleprompts: Record<string, string> = {
     'Bold and Graphic': 'a bold and graphic style thumbnail, vibrant colors, strong contrasts, eye-catching design, modern typography, dynamic layout, high visual impact, simple yet striking',
