@@ -80,21 +80,21 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  process.env.CLIENT_URL,  // Your deployed Vercel frontend URL
+  'https://thumblifyago-kohl.vercel.app',
 ].filter(Boolean) as string[];
 
 app.use(
   cors({
     // Allowed frontend URLs
     // Interview Q:
-// 19) Why must frontend URL be explicitly mentioned?
-// 20) What happens if origin is "*"" and credentials is true?
+    // 19) Why must frontend URL be explicitly mentioned?
+    // 20) What happens if origin is "*"" and credentials is true?
     origin: allowedOrigins,
 
     // Allows cookies/session IDs to be sent from frontend
     // Interview Q:
-// 21) Why is credentials:true REQUIRED for sessions?
-// 22) What breaks if this is false?
+    // 21) Why is credentials:true REQUIRED for sessions?
+    // 22) What breaks if this is false?
     credentials: true,
   })
 );
@@ -119,47 +119,47 @@ app.use(
   session({
     // Secret key used to sign session ID cookie
     // Interview Q:
-// 25) What happens if session secret is leaked?
-// 26) Should secret be same across deployments?
+    // 25) What happens if session secret is leaked?
+    // 26) Should secret be same across deployments?
     secret: process.env.SESSION_SECRET || 'dev-secret',
 
     // Prevents resaving unchanged sessions
     // Interview Q:
-// 27) Why is resave:false recommended?
+    // 27) Why is resave:false recommended?
     resave: false,
 
     // Prevents creating empty sessions
     // Interview Q:
-// 28) When does a session actually get created?
+    // 28) When does a session actually get created?
     saveUninitialized: false,
 
     // Cookie configuration (stored in browser)
     cookie: {
       // 7 days expiry
       // Interview Q:
-// 29) What happens when maxAge expires?
+      // 29) What happens when maxAge expires?
       maxAge: 1000 * 60 * 60 * 24 * 7,
 
       // Prevents JS access → XSS protection
       // Interview Q:
-// 30) How does httpOnly protect against attacks?
+      // 30) How does httpOnly protect against attacks?
       httpOnly: true,
 
       // HTTPS-only cookies in production
       // Interview Q:
-// 31) Why must secure:true in production?
+      // 31) Why must secure:true in production?
       secure: process.env.NODE_ENV === 'production',
 
       // CSRF protection — 'none' required for cross-site cookies in production
       // Interview Q:
-// 32) Difference between strict, lax, and none?
+      // 32) Difference between strict, lax, and none?
       sameSite: process.env.NODE_ENV === 'production' ? 'none' as const : 'lax' as const,
     },
 
     // Store sessions in MongoDB
     // Interview Q:
-// 33) How does connect-mongo work internally?
-// 34) What happens if MongoDB goes down?
+    // 33) How does connect-mongo work internally?
+    // 34) What happens if MongoDB goes down?
     store: MongoStore.create({
       mongoUrl: process.env.MONGODB_URI as string,
       collectionName: 'sessions',
@@ -185,14 +185,14 @@ const port = Number(process.env.PORT) || 3000;
 app.get('/', (req: Request, res: Response) => {
   // Health check route
   // Interview Q:
-// 36) Why do companies keep health check endpoints?
-// 37) How would you protect routes using sessions?
+  // 36) Why do companies keep health check endpoints?
+  // 37) How would you protect routes using sessions?
   res.send('Server is Live!');
 });
 
 app.use('/api/auth', authrouter);
 app.use('/api/thumbnails', thumbnailrouter);
-app.use('/api/user' , userrouter);
+app.use('/api/user', userrouter);
 // =======================
 // DATABASE CONNECTION
 // =======================
