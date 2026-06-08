@@ -3,7 +3,7 @@ import Thumbnail from '../models/thumbnail.model.js';
 import { Type } from '@google/genai';
 import path from 'node:path';
 import fs from 'node:fs';
-import { v2 as cloudinary } from 'cloudinary';
+import cloudinary from '../configs/cloudinary.js';
 import ai from '../configs/ai.js';
 
 const styleprompts: Record<string, string> = {

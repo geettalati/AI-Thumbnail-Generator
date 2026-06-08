@@ -9,7 +9,7 @@ export interface IThumbnail extends Document {
     | "Bold & Graphic"
     | "Tech/Futuristic"
     | "Minimalist"
-    | "Photorealistic"
+    | "Photorealistic"  
     | "Illustrated";
   aspect_ratio?: "16:9" | "1:1" | "9:16";
   color_scheme?:
