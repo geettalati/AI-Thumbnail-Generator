@@ -77,13 +77,19 @@ const app = express();
 // =======================
 
 // This middleware runs for EVERY request
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.CLIENT_URL,  // Your deployed Vercel frontend URL
+].filter(Boolean) as string[];
+
 app.use(
   cors({
     // Allowed frontend URLs
     // Interview Q:
 // 19) Why must frontend URL be explicitly mentioned?
 // 20) What happens if origin is "*"" and credentials is true?
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: allowedOrigins,
 
     // Allows cookies/session IDs to be sent from frontend
     // Interview Q:
@@ -139,15 +145,15 @@ app.use(
 // 30) How does httpOnly protect against attacks?
       httpOnly: true,
 
-      // HTTPS-only cookies
+      // HTTPS-only cookies in production
       // Interview Q:
 // 31) Why must secure:true in production?
-      secure: false,
+      secure: process.env.NODE_ENV === 'production',
 
-      // CSRF protection
+      // CSRF protection — 'none' required for cross-site cookies in production
       // Interview Q:
 // 32) Difference between strict, lax, and none?
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' as const : 'lax' as const,
     },
 
     // Store sessions in MongoDB
@@ -188,23 +194,25 @@ app.use('/api/auth', authrouter);
 app.use('/api/thumbnails', thumbnailrouter);
 app.use('/api/user' , userrouter);
 // =======================
-// SERVER STARTUP
+// DATABASE CONNECTION
 // =======================
 
-async function startServer() {
-  // Connect to DB before server starts
-  // Interview Q:
-  // 38) What happens if DB connects after app.listen?
-  // 39) How would you handle DB connection failure gracefully?
-  await connectDB();
+// Connect to DB at module level for both local and serverless
+connectDB();
 
+// =======================
+// SERVER STARTUP (local dev only)
+// =======================
+
+// On Vercel, app.listen() is not needed — Vercel handles it via the export
+if (!process.env.VERCEL) {
   app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
   });
 }
 
-// Start the application
-startServer();
+// Export the app for Vercel serverless functions
+export default app;
 
 
 // =======================

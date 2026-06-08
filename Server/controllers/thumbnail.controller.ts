@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Thumbnail from '../models/thumbnail.model.js';
 import path from 'node:path';
 import fs from 'node:fs';
+import os from 'node:os';
 import cloudinary from '../configs/cloudinary.js';
 
 const styleprompts: Record<string, string> = {
@@ -77,10 +78,7 @@ export const generatethumbnail = async (req: Request, res: Response) => {
         const finalbuffer = Buffer.from(arrayBuffer);
 
         const filename = `final-output-${Date.now()}.png`;
-        const filepath = path.join('images', filename);
-
-        // Ensure the images directory exists
-        fs.mkdirSync('images', { recursive: true });
+        const filepath = path.join(os.tmpdir(), filename);
 
         // Write the final image to the file
         fs.writeFileSync(filepath, finalbuffer);
